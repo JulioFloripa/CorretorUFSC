@@ -1,148 +1,216 @@
-import pandas as pd
-import os
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-def decompor_somatorio(valor):
-    afirmativas = {
-        1: '01',
-        2: '02',
-        4: '04',
-        8: '08',
-        16: '16',
-        32: '32',
-        64: '64'
+function CadastroGabarito() {
+  const navigate = useNavigate();
+
+  const disciplinasDia1 = [
+    { nome: "Língua Portuguesa e Literatura Brasileira", questoes: 12 },
+    { nome: "Segunda Língua (Inglês)", questoes: 8, segundaLingua: true },
+    { nome: "Segunda Língua (Espanhol)", questoes: 8, segundaLingua: true },
+    { nome: "Matemática", questoes: 10 },
+    { nome: "Biologia", questoes: 10 },
+  ];
+
+  const disciplinasDia2 = [
+    { nome: "Física", questoes: 10 },
+    { nome: "Química", questoes: 10 },
+    { nome: "Ciências Humanas e Sociais", questoes: 20 },
+  ];
+
+  const [gabaritos, setGabaritos] = useState([]);
+  const [nomeGabarito, setNomeGabarito] = useState("");
+
+  const handleChange = (index, field, value) => {
+    const novosGabaritos = [...gabaritos];
+    novosGabaritos[index][field] = value;
+    setGabaritos(novosGabaritos);
+  };
+
+  const gerarQuestoes = () => {
+    let lista = [];
+    let numeroQuestao = 1;
+    let numeroQuestaoSegundaLingua = 13;
+
+
+    // Dia 1
+    disciplinasDia1.forEach((disciplina) => {
+      if (disciplina.segundaLingua) {
+        for (let i = 1; i <= disciplina.questoes; i++) {
+          lista.push({
+            dia: 1,
+            disciplina: disciplina.nome,
+            numeroQuestao: numeroQuestaoSegundaLingua + (i - 1),
+            somatorioCorreto: "",
+            totalAfirmativas: "",
+            tipoQuestao: "Somatório",
+          });
+        }
+      } else {
+        for (let i = 1; i <= disciplina.questoes; i++) {
+          lista.push({
+            dia: 1,
+            disciplina: disciplina.nome,
+            numeroQuestao: numeroQuestao,
+            somatorioCorreto: "",
+            totalAfirmativas: "",
+            tipoQuestao: "Somatório",
+          });
+          numeroQuestao++;
+        }
+      }
+    });
+
+    // Dia 2 (reinicia contagem)
+numeroQuestao = 1;
+
+// ATENÇÃO: ordem manual para o Dia 2
+[
+  { nome: "Ciências Humanas e Sociais", questoes: 20 },
+  { nome: "Física", questoes: 10 },
+  { nome: "Química", questoes: 10 }
+].forEach((disciplina) => {
+  for (let i = 1; i <= disciplina.questoes; i++) {
+    lista.push({
+      dia: 2,
+      disciplina: disciplina.nome,
+      numeroQuestao: numeroQuestao,
+      somatorioCorreto: "",
+      totalAfirmativas: "",
+      tipoQuestao: "Somatório",
+    });
+    numeroQuestao++;
+  }
+});
+
+
+    setGabaritos(lista);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!nomeGabarito.trim()) {
+      alert("⚠️ Por favor, preencha o Nome do Gabarito!");
+      return;
     }
-    corretas = []
-    for num in sorted(afirmativas.keys(), reverse=True):
-        if valor >= num:
-            corretas.append(afirmativas[num])
-            valor -= num
-    return corretas
 
-def calcular_pontuacao(NP, NTPC, NPC, NPI):
-    if NPC > NPI:
-        P = (NP - (NTPC - (NPC - NPI))) / NP
-    else:
-        P = 0
-    return round(P, 2)
+    const dadosParaSalvar = {
+      nomeGabarito,
+      questoes: gabaritos,
+    };
 
-def corrigir_simulado(arquivo_dia1, arquivo_dia2, gabarito_dia1, gabarito_dia2):
-    # Lê os arquivos de respostas enviados
-    respostas_dia1 = pd.read_excel(arquivo_dia1)
-    respostas_dia2 = pd.read_excel(arquivo_dia2)
+    console.log("Gabarito enviado:", dadosParaSalvar);
+    alert(`✅ Gabarito "${nomeGabarito}" montado! (Veja no console)`);
+    navigate("/"); // Redireciona para a lista de gabaritos
+  };
 
-    # --- Separar os gabaritos do Dia 1
-    gabarito_comum_dia1 = gabarito_dia1[gabarito_dia1['Disciplina'] == 'Comum']
-    gabarito_ingles = gabarito_dia1[gabarito_dia1['Disciplina'] == 'Inglês']
-    gabarito_espanhol = gabarito_dia1[gabarito_dia1['Disciplina'] == 'Espanhol']
+  if (gabaritos.length === 0) {
+    gerarQuestoes();
+  }
 
-    # --- Encontrar coluna da língua estrangeira
-    coluna_lingua = next((col for col in respostas_dia1.columns if 'língua' in col.lower()), None)
-    if coluna_lingua is None:
-        raise ValueError("⚠️ Coluna de língua estrangeira não encontrada no Dia 1.")
+  return (
+    <div className="bg-green-50 min-h-screen p-6">
+      <h1 className="text-3xl font-bold text-green-700 mb-6">Cadastro de Gabarito - Corretor UFSC</h1>
+<button
+  type="button"
+  onClick={() => navigate("/")}
+  className="mb-6 bg-green-300 hover:bg-green-400 text-green-900 font-bold py-2 px-4 rounded-lg"
+>
+  ← Voltar
+</button>
 
-    # --- Criar pasta de relatórios se ainda não existir
-    if not os.path.exists('relatorios_individuais'):
-        os.makedirs('relatorios_individuais')
+      <form onSubmit={handleSubmit}>
+        <div className="mb-8">
+          <label className="block text-green-700 font-semibold mb-2 text-xl">
+            Nome do Gabarito:
+          </label>
+          <input
+            type="text"
+            value={nomeGabarito}
+            onChange={(e) => setNomeGabarito(e.target.value)}
+            placeholder="Exemplo: Simulado UFSC Inverno"
+            className="w-full max-w-md border border-green-300 rounded p-2 shadow-sm"
+            required
+          />
+        </div>
 
-    todos_emails = set(respostas_dia1['Email'].unique()).union(respostas_dia2['Email'].unique())
-    resultado_final_com_disciplinas = []
+        {[1, 2].map((dia) => (
+          <div key={dia} className="mb-10">
+            <h2 className="text-2xl font-semibold text-green-700 mb-4">
+              Dia {dia}
+            </h2>
 
-    for email in todos_emails:
-        aluno_dia1 = respostas_dia1[respostas_dia1['Email'] == email]
-        aluno_dia2 = respostas_dia2[respostas_dia2['Email'] == email]
+            <div className="overflow-x-auto shadow rounded-lg">
+              <table className="min-w-full bg-white rounded-lg">
+                <thead className="bg-green-600 text-white">
+                  <tr>
+                    <th className="py-2 px-4 text-left">Disciplina</th>
+                    <th className="py-2 px-4 text-left">Questão</th>
+                    <th className="py-2 px-4 text-left">Somatório Correto</th>
+                    <th className="py-2 px-4 text-left">Total de Afirmativas</th>
+                    <th className="py-2 px-4 text-left">Tipo de Questão</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gabaritos
+                    .filter((q) => q.dia === dia)
+                    .map((q, index) => (
+                      <tr key={index} className="hover:bg-green-100">
+                        <td className="border px-4 py-2">{q.disciplina}</td>
+                        <td className="border px-4 py-2">{q.numeroQuestao}</td>
+                        <td className="border px-4 py-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={q.somatorioCorreto}
+                            onChange={(e) => {
+                              const valor = e.target.value;
+                              if (/^\d*$/.test(valor)) {  // Permite apenas números
+                                handleChange(index, "somatorioCorreto", valor);
+                              }
+                            }}
+                          />
+                        </td>
+                        <td className="border px-4 py-2">
+                          <input
+                            type="number"
+                            min="0"
+                            max="7"
+                            value={q.totalAfirmativas !== "" ? Number(q.totalAfirmativas) : ""}
+                            onChange={(e) => handleChange(index, "totalAfirmativas", e.target.value)}
+                            className="w-20 p-1 border border-green-300 rounded"
+                            required
+                          />
+                        </td>
+                        <td className="border px-4 py-2">
+                          <select
+                            value={q.tipoQuestao}
+                            onChange={(e) => handleChange(index, "tipoQuestao", e.target.value)}
+                            className="p-1 border border-green-300 rounded"
+                          >
+                            <option value="Somatório">Somatório</option>
+                            <option value="Aberta">Aberta</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
 
-        nome = aluno_dia1['Name'].values[0] if not aluno_dia1.empty else aluno_dia2['Name'].values[0]
-        lingua = aluno_dia1[coluna_lingua].values[0].strip().lower() if not aluno_dia1.empty else 'não informado'
+        <button
+          type="submit"
+          className="mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg"
+        >
+          Salvar Gabarito
+        </button>
+      </form>
+    </div>
+  );
+}
 
-        nota_portugues = 0
-        nota_lingua = 0
-        nota_matematica = 0
-        nota_biologia = 0
-        nota_humanas = 0
-        nota_fisica = 0
-        nota_quimica = 0
-
-        # --- Corrigir Dia 1
-        if not aluno_dia1.empty:
-            aluno_dia1 = aluno_dia1.iloc[0]
-
-            for _, questao in gabarito_comum_dia1.iterrows():
-                numero_questao = int(questao['Questão'])
-                questao_nome = f"Questões {numero_questao}"
-                resposta_raw = aluno_dia1.get(questao_nome, 'Ausente')
-
-                pontuacao = calcular_pontuacao_questao(resposta_raw, questao)
-
-                if 1 <= numero_questao <= 12:
-                    nota_portugues += pontuacao
-                elif 13 <= numero_questao <= 20:
-                    nota_lingua += pontuacao
-                elif 21 <= numero_questao <= 30:
-                    nota_matematica += pontuacao
-                elif 31 <= numero_questao <= 40:
-                    nota_biologia += pontuacao
-
-            # Corrigir Língua Estrangeira
-            gabarito_lingua = gabarito_ingles if lingua == 'inglês' else gabarito_espanhol if lingua == 'espanhol' else pd.DataFrame()
-            for _, questao in gabarito_lingua.iterrows():
-                numero_questao = int(questao['Questão'])
-                questao_nome = f"Questões {numero_questao}"
-                resposta_raw = aluno_dia1.get(questao_nome, 'Ausente')
-
-                pontuacao = calcular_pontuacao_questao(resposta_raw, questao)
-                nota_lingua += pontuacao
-
-        # --- Corrigir Dia 2
-        if not aluno_dia2.empty:
-            aluno_dia2 = aluno_dia2.iloc[0]
-
-            for _, questao in gabarito_dia2.iterrows():
-                numero_questao = int(questao['Questão'])
-                questao_nome = f"Questões {numero_questao}"
-                resposta_raw = aluno_dia2.get(questao_nome, 'Ausente')
-
-                pontuacao = calcular_pontuacao_questao(resposta_raw, questao)
-
-                if 1 <= numero_questao <= 20:
-                    nota_humanas += pontuacao
-                elif 21 <= numero_questao <= 30:
-                    nota_fisica += pontuacao
-                elif 31 <= numero_questao <= 40:
-                    nota_quimica += pontuacao
-
-        # Resultado do aluno
-        resultado_final_com_disciplinas.append({
-            'Email': email,
-            'Nome': nome,
-            'Português/Lit': round(nota_portugues, 2),
-            'Segunda Língua': round(nota_lingua, 2),
-            'Matemática': round(nota_matematica, 2),
-            'Biologia': round(nota_biologia, 2),
-            'Ciências Humanas': round(nota_humanas, 2),
-            'Física': round(nota_fisica, 2),
-            'Química': round(nota_quimica, 2),
-            'Nota Final': round(nota_portugues + nota_lingua + nota_matematica + nota_biologia + nota_humanas + nota_fisica + nota_quimica, 2)
-        })
-
-    # --- Gerar o relatório final em Excel ---
-    resultado_final_df = pd.DataFrame(resultado_final_com_disciplinas)
-    resultado_final_df.to_excel('resultado_final.xlsx', index=False)
-
-    return resultado_final_com_disciplinas
-
-def calcular_pontuacao_questao(resposta_raw, questao):
-    if pd.isna(resposta_raw) or resposta_raw == 'Ausente':
-        return 0
-    try:
-        resposta_num = int(resposta_raw)
-        if resposta_num > 99:
-            resposta_num = 99
-        resposta_aluno = decompor_somatorio(resposta_num)
-        corretas = decompor_somatorio(int(questao['Somatório Correto']))
-        NP = int(questao['Total de Afirmativas'])
-        NTPC = len(corretas)
-        NPC = len([alt for alt in resposta_aluno if alt in corretas])
-        NPI = len([alt for alt in resposta_aluno if alt not in corretas])
-        return calcular_pontuacao(NP, NTPC, NPC, NPI)
-    except:
-        return 0
+export default CadastroGabarito;
